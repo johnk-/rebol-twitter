@@ -1,27 +1,26 @@
 REBOL [
     Title: "Twitter Client for REBOL"
-    Date: 20-May-2013
+    Date: 10-Jun-2013
     Author: "Christopher Ross-Gill/John Kenyon"
-    Version: 0.3.5
+    Version: 0.3.6
+    type: module
+    name: twitter
+    exports: [ twitter ]
     Rights: http://creativecommons.org/licenses/by-nc-sa/2.0/
     File: %twitter.r3
+    Needs: [
+        http://reb4.me/r3/altwebform
+        http://reb4.me/r3/altjson
+    ]
     Purpose: {
         REBOL script to access and use the Twitter OAuth API.
         Warning: Currently configured to use HTTP only
+        New user registration must be done using rebol 2 version
+        This function will be updated when https is available (for Linux)
     }
-    Settings: [
-        ; use if not working with 'do/args
-        ;Consumer-Key: <consumer-key>
-        ;Consumer-Secret: <consumer-secret>
-        ;User-Store: <path-to-saved-users>
-        Consumer-Key: "XXXX"
-        Consumer-Secret: "XXXX"
-        User-Store: %twitter-user-data.r
-    ]
 ]
-
-do http://reb4.me/r3/altwebform
-do http://reb4.me/r3/altjson
+; Local words
+authorized-users: twitter-config: twitter-url: settings: users: none
 
 twitter: context bind [
     as: func [
@@ -117,13 +116,26 @@ twitter: context bind [
         unless persona/name error/credentials
         unless all [0 < length? status override > length? status] error/invalid
         set message reduce [status id]
-        either attempt [
+        ;either attempt [
             result: send/with 'post %1.1/statuses/update.json message
-        ] load-result error/connection
+        ;] load-result error/connection
     ]
 
 ] context [ ; internals
-    twitter: http://api.twitter.com/
+    either exists? %twitter-config.r3 [
+        twitter-config: object load %twitter-config.r3
+        twitter-url: twitter-config/twitter
+        settings: make context [
+            consumer-key: consumer-secret: users: none
+        ] [ 
+            consumer-key: twitter-config/consumer-key
+            consumer-secret: twitter-config/consumer-secret
+        ]
+        users: twitter-config/users
+    ] [
+        print "No configuration file"
+        halt
+    ]
 
     options: context [screen_name: count: page: none]
     params: context [q: page: rpp: none]
@@ -137,15 +149,6 @@ twitter: context bind [
         connection [throw make error! "Unable to connect to Twitter"]
         invalid [throw make error! "Status length should be between between 1 and 140"]
     ]
-
-    settings: make context [
-        consumer-key: consumer-secret: user-store: none
-    ] any [
-        system/script/args
-        system/script/header/settings
-    ]
-
-    users: any [attempt [load settings/user-store] []]
 
     persona: context [
         id: name: none
@@ -197,7 +200,7 @@ twitter: context bind [
             forskip params 2 [params/1: to word! params/1 if issue? params/2 [ params/2: to string! to word! params/2 ] ]
             oauth/oauth_signature: enbase/base checksum/secure/key to binary! rejoin [
                 uppercase form method "&" replace/all url-encode form lookup "%5f" "_" "&"
-                replace/all url-encode replace/all to-webform params "+" "%20" "%5f" "_"
+                replace/all replace/all url-encode replace/all to-webform params "+" "%20" "%5f" "_" "%255F" "_"
             ] rejoin [
                 settings/consumer-secret "&" any [persona/secret ""]
             ] 64
@@ -217,7 +220,7 @@ twitter: context bind [
             /auth oauth [object!]
             /with params [object!]
         ][
-            lookup: twitter/:lookup
+            lookup: twitter-url/:lookup
             oauth: make oauth! any [oauth []]
             if object? params [params: body-of params ]
 
@@ -271,7 +274,7 @@ twitter: context bind [
             persona/token: response/oauth_token
             persona/secret: response/oauth_token_secret
 
-            browse join twitter/:verification-page response/oauth_token 
+            browse join twitter-url/:verification-page response/oauth_token 
             unless verifier: request "Enter your PIN from Twitter: " [
                 make error! "Not a valid PIN"
             ]
