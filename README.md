@@ -10,3 +10,5 @@ Instructions on use and configuration are here:
 http://www.ross-gill.com/page/Twitter_API_and_REBOL
 
 This is alpha level debug only code!
+
+Note that you must still use Rebol 2 to create a twitter users file as this requires https support and the current linux build of Rebol 3 does not include https.
