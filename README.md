@@ -11,11 +11,8 @@ http://www.ross-gill.com/page/Twitter_API_and_REBOL
 
 This is alpha level debug only code!
 
-Note that you must still use Rebol 2 to create a twitter users file as this requires https support and the current linux build of Rebol 3 does not include https which means that following the recent api change at twitter this is currently not working.
-
-https://dev.twitter.com/calendar
-
-Hopefully once we have https up and running we can get this updated.
+Note that you must still use Rebol 2 to create a twitter users file as this requires https support. This means that you need to use either the Atronix or Saphir builds as the current rebolsource build does not  contain https.
+I have tested this succesfully with the Atronix build (on stackoverflow chat).
 
 
 Thank you to FreeDNS for DNS hosting http://freedns.afraid.org/
